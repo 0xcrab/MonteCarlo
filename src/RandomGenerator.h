@@ -3,7 +3,7 @@
 #include <functional>
 #include <vector>
 
-typedef unsigned __int64 uBigInt;
+typedef unsigned long long uBigInt;
 
 // Define prototype of random number generator
 typedef std::function<double()> RDN_GEN;
