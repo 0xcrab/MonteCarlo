@@ -6,6 +6,7 @@
 #include <functional>
 #include <numeric>
 #include <iostream>
+#include "NumericTools/Midpoint Rule.h"
 using namespace std;
 
 vector<double> MonteCarlo_EUdiv_helper(double S0, double r, double vol, double T,
@@ -45,7 +46,6 @@ vector<double> MonteCarlo_EUdiv_helper(double S0, double r, double vol, double T
 	return price;
 }
 
-
 double MonteCarlo_EUdiv(double S0, double r, double vol, double T,
 		function<double(double)> payoff,
 		std::map<double, Divident*> divs,
@@ -55,10 +55,26 @@ double MonteCarlo_EUdiv(double S0, double r, double vol, double T,
 	return accumulate(price.begin(), price.end(), 0.0) / static_cast<double>(price.size());
 }
 
+double BSPrice(double St, double _K, double _r, double _q, double _sigma, double dt, bool isPut)
+{
+	double d1 = (log(St / _K) + (_r - _q + _sigma*_sigma / 2.) * dt) / (_sigma*sqrt(dt));
+	double d2 = (log(St / _K) + (_r - _q - _sigma*_sigma / 2.) * dt) / (_sigma*sqrt(dt));
+	double price;
+	// for put option
+	if (isPut)
+		price = cum_dist_normal(d1)*St*exp(-_q*dt)
+		- cum_dist_normal(d2)*_K*exp(-_r*dt);
+	// for call option
+	else
+		price = cum_dist_normal(-d2)*_K*exp(-_r*dt)
+		- cum_dist_normal(-d1)*St*exp(-_q*dt);
+	return price;
+}
+
 double MonteCarlo_EUdiv_CV(double S0, double r, double vol, double T,
 		function<double(double)> payoff,
 		std::map<double, Divident*> divs,
-		size_t npath){
+		size_t npath, double BS_Price){
 	
 	auto price_div = MonteCarlo_EUdiv_helper(S0, r, vol, T, payoff, divs, npath);
 	map<double, Divident*> zero_divs;
@@ -78,7 +94,6 @@ double MonteCarlo_EUdiv_CV(double S0, double r, double vol, double T,
 	auto b = up / down;
 	//cout << "b=" << b << endl;
 	vector<double> cv(price_div.size());
-	auto BS_price = 7.628643792;
 	for(size_t i=0; i<price_div.size(); i++){
 		cv[i] = price_div[i] - b * (price_nondiv[i] - BS_price);
 	}
