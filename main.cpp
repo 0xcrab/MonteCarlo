@@ -2,8 +2,24 @@
 #include "src/MonteCarlo.hpp"
 #include <cmath>
 #include <exception>
-using namespace std
+#include "src/NumericTools/Midpoint Rule.h"
+using namespace std;
 
+double BSPrice(double St, double _K, double _r, double _q, double _sigma, double dt, bool isPut)
+{
+	double d1 = (log(St / _K) + (_r - _q + _sigma*_sigma / 2.) * dt) / (_sigma*sqrt(dt));
+	double d2 = (log(St / _K) + (_r - _q - _sigma*_sigma / 2.) * dt) / (_sigma*sqrt(dt));
+	double price;
+	// for put option
+	if (!isPut)
+		price = cum_dist_normal(d1)*St*exp(-_q*dt)
+		- cum_dist_normal(d2)*_K*exp(-_r*dt);
+	// for call option
+	else
+		price = cum_dist_normal(-d2)*_K*exp(-_r*dt)
+		- cum_dist_normal(-d1)*St*exp(-_q*dt);
+	return price;
+}
 
 int main(){
 
@@ -20,7 +36,9 @@ int main(){
 								{div2.getTime(), &div2},
 								{div3.getTime(), &div3},
 	};
-	cout << MonteCarlo_EUdiv_CV(S0, r, vol, T, payoff, divs, 5000) << endl;
+	double bs = BSPrice(S0, K, r, 0, vol, T, true);
+	cout << "bs = " << bs << endl;
+	cout << MonteCarlo_EUdiv_CV(S0, r, vol, T, payoff, divs, 5000, bs) << endl;
 
 	auto tryMethod = [=](int npath, auto method){
 		cout << npath << '\t' << method(S0, r, vol, T, payoff, divs, npath) << endl;
@@ -29,8 +47,11 @@ int main(){
 	for(int k=0; k<8; k++)
 		tryMethod(10000 * (1 << k), MonteCarlo_EUdiv);
 	cout << "--------------------------------------------------" << endl;
+	auto tryMethod2 = [=](int npath, auto method){
+		cout << npath << '\t' << method(S0, r, vol, T, payoff, divs, npath, bs) << endl;
+	};
 	for(int k=0; k<7; k++)
-		tryMethod(10000 * (1 << k), MonteCarlo_EUdiv_CV);
+		tryMethod2(10000 * (1 << k), MonteCarlo_EUdiv_CV);
 
 	return 0;
 }
