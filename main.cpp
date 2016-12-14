@@ -37,7 +37,7 @@ double BSDelta(double St, double _K, double _r, double _q, double _sigma, double
 
 int main(){
 
-	cout.precision(9);
+	cout.precision(12);
 
 	double S0 = 50;
 	double K = 55.55;
